@@ -1,20 +1,6 @@
 (function () {
   'use strict';
 
-  function canDownloadApk(response) {
-    if (!response || !response.ok) {
-      return false;
-    }
-
-    const contentType = response.headers.get('content-type') || '';
-    const contentLength = Number(response.headers.get('content-length') || 0);
-    return !contentType.toLowerCase().includes('text/html') && contentLength > 0;
-  }
-
-  if (typeof window !== 'undefined') {
-    window.AquaTrackSite = Object.freeze({ canDownloadApk: canDownloadApk });
-  }
-
   if (typeof document === 'undefined') {
     return;
   }
@@ -23,9 +9,6 @@
   const header = document.querySelector('[data-header]');
   const menuToggle = document.querySelector('[data-menu-toggle]');
   const navigation = document.querySelector('[data-navigation]');
-  const downloadLink = document.querySelector('[data-apk-download]');
-  const downloadLabel = document.querySelector('[data-apk-label]');
-  const downloadStatus = document.querySelector('[data-apk-status]');
   const currentYear = document.querySelector('[data-current-year]');
 
   root.classList.add('js');
@@ -99,40 +82,4 @@
     });
   }
 
-  async function checkApkAvailability() {
-    if (!downloadLink || !downloadLabel || !downloadStatus) {
-      return;
-    }
-
-    const apkPath = downloadLink.dataset.apkPath;
-    if (!apkPath || window.location.protocol === 'file:') {
-      return;
-    }
-
-    downloadStatus.textContent = 'Comprobando disponibilidad de la APK…';
-
-    try {
-      const response = await fetch(apkPath, { method: 'HEAD', cache: 'no-store' });
-      if (!canDownloadApk(response)) {
-        downloadStatus.textContent = 'La APK se publicará próximamente.';
-        return;
-      }
-
-      downloadLink.setAttribute('href', apkPath);
-      downloadLink.setAttribute('download', 'aquatrack.apk');
-      downloadLink.removeAttribute('aria-disabled');
-      downloadLink.classList.remove('is-disabled');
-      downloadLabel.textContent = 'Descargar APK';
-
-      const contentLength = Number(response.headers.get('content-length') || 0);
-      const sizeInMb = contentLength / (1024 * 1024);
-      downloadStatus.textContent = sizeInMb >= 0.1
-        ? 'APK disponible · ' + sizeInMb.toFixed(1).replace('.', ',') + ' MB'
-        : 'APK disponible para descargar';
-    } catch (_error) {
-      downloadStatus.textContent = 'La APK se publicará próximamente.';
-    }
-  }
-
-  checkApkAvailability();
 })();

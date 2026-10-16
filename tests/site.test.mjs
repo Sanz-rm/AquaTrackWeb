@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import vm from 'node:vm';
 
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 const siteDirectory = resolve(testDirectory, '..');
@@ -81,36 +80,16 @@ test('la página tiene contenido semántico y describe el alcance real', () => {
   assert.doesNotMatch(html, /kilogramos de residuos|reducción de CO₂|residuos retirados/i);
 });
 
-test('la APK comienza deshabilitada y usa una ruta estable', () => {
+test('la APK está habilitada y usa una ruta estable', () => {
   const downloadMarkup = html.match(/<a\s+class="button download-button[\s\S]*?<\/a>/)?.[0];
   assert.ok(downloadMarkup, 'Falta el control de descarga APK');
   const downloadAttributes = attributes(downloadMarkup);
 
   assert.equal(downloadAttributes['data-apk-path'], 'apk/aquatrack.apk');
-  assert.equal(downloadAttributes['aria-disabled'], 'true');
-  assert.equal(downloadAttributes.href, undefined);
-  assert.match(downloadMarkup, /APK próximamente/);
-});
-
-test('la detección de APK rechaza errores y respuestas HTML', () => {
-  const context = vm.createContext({ window: {}, console, Object, Number });
-  vm.runInContext(script, context, { filename: 'script.js' });
-  const canDownloadApk = context.window.AquaTrackSite.canDownloadApk;
-  const response = (ok, contentType, contentLength) => ({
-    ok,
-    headers: {
-      get(name) {
-        if (name === 'content-type') return contentType;
-        if (name === 'content-length') return contentLength;
-        return null;
-      },
-    },
-  });
-
-  assert.equal(canDownloadApk(response(false, 'application/octet-stream', '100')), false);
-  assert.equal(canDownloadApk(response(true, 'text/html; charset=utf-8', '100')), false);
-  assert.equal(canDownloadApk(response(true, 'application/vnd.android.package-archive', '0')), false);
-  assert.equal(canDownloadApk(response(true, 'application/vnd.android.package-archive', '100')), true);
+  assert.equal(downloadAttributes.href, 'apk/aquatrack.apk');
+  assert.equal(downloadAttributes.download, 'aquatrack.apk');
+  assert.equal(downloadAttributes['aria-disabled'], undefined);
+  assert.match(downloadMarkup, /Descargar APK/);
 });
 
 test('el vídeo y los metadatos tienen nombres accesibles', () => {
